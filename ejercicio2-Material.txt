@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Formulario Material',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 104, 104, 105)),
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(title: 'Formulario Material'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _birthdateController = TextEditingController();
+  int _age = 0;
+  bool _acceptedTerms = false;
+  bool _isSubmitting = false;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900, 1),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != DateTime.now()) {
+      setState(() {
+        _birthdateController.text = "${picked.toLocal()}".split(' ')[0];
+        _age = DateTime.now().year - picked.year;
+        if (DateTime.now().month < picked.month || (DateTime.now().month == picked.month && DateTime.now().day < picked.day)) {
+          _age--;
+        }
+      });
+    }
+  }
+
+  void _showMaterialAlertWithOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Bienvenido'),
+          content: const Text('Sus datos han sido guardados'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate() && _acceptedTerms) {
+      setState(() {
+        _isSubmitting = true;
+      });
+
+      // Simular una operación que toma 2 segundos
+      Future.delayed(const Duration(seconds: 2), () {
+        setState(() {
+          _isSubmitting = false;
+        });
+        _showMaterialAlertWithOptions(context);
+      });
+    } else if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe aceptar los términos y condiciones')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: _isSubmitting
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : Form(
+                key: _formKey,
+                child: ListView(
+                  children: <Widget>[
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Correo electrónico',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor, ingrese su correo electrónico';
+                        }
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          return 'Por favor, ingrese un correo electrónico válido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña',
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor, ingrese su contraseña';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _birthdateController,
+                      decoration: const InputDecoration(
+                        labelText: 'Fecha de nacimiento',
+                      ),
+                      readOnly: true,
+                      onTap: () => _selectDate(context),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor, seleccione su fecha de nacimiento';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Edad: $_age',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: <Widget>[
+                        Switch(
+                          value: _acceptedTerms,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _acceptedTerms = value;
+                            });
+                          },
+                        ),
+                        const Text('Acepto los términos y condiciones'),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _submitForm,
+                      child: const Text('Enviar'),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,215 @@
+import 'package:flutter/cupertino.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoApp(
+      title: 'Formulario Cupertino',
+      theme: const CupertinoThemeData(
+        primaryColor: Color.fromARGB(255, 11, 71, 105),
+      ),
+      home: const MyHomePage(title: 'Formulario Cupertino'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _birthdateController = TextEditingController();
+  int _age = 0;
+  bool _acceptedTerms = false;
+  bool _isSubmitting = false;
+  DateTime? _selectedDate;
+
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime initialDate = DateTime.now();
+    DateTime? picked = await showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 250,
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          child: Column(
+            children: [
+              Container(
+                height: 200,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: initialDate,
+                  onDateTimeChanged: (DateTime dateTime) {
+                    setState(() {
+                      _selectedDate = dateTime;
+                    });
+                  },
+                ),
+              ),
+              CupertinoButton(
+                child: const Text('Seleccionar'),
+                onPressed: () {
+                  Navigator.of(context).pop(_selectedDate);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _birthdateController.text = "${picked.toLocal()}".split(' ')[0];
+        _age = DateTime.now().year - picked.year;
+        if (DateTime.now().month < picked.month ||
+            (DateTime.now().month == picked.month && DateTime.now().day < picked.day)) {
+          _age--;
+        }
+      });
+    }
+  }
+
+  void _showCupertinoAlertWithOptions(BuildContext context) {
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text('Bienvenido'),
+          content: const Text('Sus datos han sido guardados'),
+          actions: <CupertinoDialogAction>[
+            CupertinoDialogAction(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _submitForm() {
+    if (_acceptedTerms) {
+      setState(() {
+        _isSubmitting = true;
+      });
+
+      // Simular una operación que toma 2 segundos
+      Future.delayed(const Duration(seconds: 2), () {
+        setState(() {
+          _isSubmitting = false;
+        });
+        _showCupertinoAlertWithOptions(context);
+      });
+    } else {
+      showCupertinoDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return CupertinoAlertDialog(
+            title: const Text('Error'),
+            content: const Text('Debe aceptar los términos y condiciones'),
+            actions: <CupertinoDialogAction>[
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(widget.title),
+      ),
+      child: Container(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        padding: const EdgeInsets.all(16.0),
+        child: _isSubmitting
+            ? const Center(
+                child: CupertinoActivityIndicator(),
+              )
+            : Form(
+                key: _formKey,
+                child: ListView(
+                  children: <Widget>[
+                    CupertinoTextField(
+                      controller: _emailController,
+                      placeholder: 'Correo electrónico',
+                      keyboardType: TextInputType.emailAddress,
+                      clearButtonMode: OverlayVisibilityMode.editing,
+                    ),
+                    const SizedBox(height: 20),
+                    CupertinoTextField(
+                      controller: _passwordController,
+                      placeholder: 'Contraseña',
+                      obscureText: true,
+                      clearButtonMode: OverlayVisibilityMode.editing,
+                    ),
+                    const SizedBox(height: 20),
+                    CupertinoTextField(
+                      controller: _birthdateController,
+                      placeholder: 'Fecha de nacimiento',
+                      readOnly: true,
+                      onTap: () => _selectDate(context),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Edad: $_age',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: <Widget>[
+                        CupertinoSwitch(
+                          value: _acceptedTerms,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _acceptedTerms = value;
+                            });
+                          },
+                        ),
+                        const Text('Acepto los términos y condiciones'),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    CupertinoButton.filled(
+                      onPressed: _submitForm,
+                      child: const Text('Enviar'),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+}
+
